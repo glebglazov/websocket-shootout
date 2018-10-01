@@ -19,3 +19,6 @@
 [submodule "cpp/vendor/rapidjson"]
 	path = cpp/vendor/rapidjson
 	url = https://github.com/miloyip/rapidjson.git
+[submodule "y"]
+	path = ruby/anycable-rails
+	url = ./ruby/anycable-rails/
