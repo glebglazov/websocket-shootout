@@ -1,0 +1,75 @@
+version: '3.4'
+
+x-javascript-ws-server: &javascript_ws_server
+  build:
+    context: ./js
+  volumes:
+    - ./js:/server
+
+x-rails-ws-server: &rails_ws_server
+  depends_on:
+    - redis
+  links:
+    - redis
+  volumes:
+    - .:/server
+  environment:
+    - RAILS_ENV=production
+    - WEB_CONCURRENCY=4
+  command: bundle exec bin/rails s -b 0.0.0.0 -p 3334
+  tty: true
+  stdin_open: true
+
+services:
+  redis:
+    image: redis:3.2.5-alpine
+    restart: unless-stopped
+    command: redis-server
+    volumes:
+      - redis:/data
+
+  actioncable:
+    <<: *rails_ws_server
+    build:
+      context: ./ruby/action-cable-server
+    ports:
+      - 8080:3334
+
+  anycable:
+    <<: *rails_ws_server
+    build:
+      context: ./ruby/anycable-rails
+    ports:
+      - 8085:3334
+
+  anycable-go:
+    build:
+      context: ./ruby/anycable-rails
+      dockerfile: Dockerfile-anycable-go
+    environment:
+      - REDIS=redis://redis:6379/1
+      - RPC=rpc:50051
+
+  # faye:
+  #   <<: *javascript_ws_server
+  #   ports:
+  #     - 8090:3334
+  #   command: node ./run-cluster.js faye
+
+  # uws:
+  #   <<: *javascript_ws_server
+  #   ports:
+  #     - 8095:3334
+  #   command: node run-cluster.js uws
+
+  # ws:
+  #   <<: *javascript_ws_server
+  #   ports:
+  #     - 8100:3334
+  #   command: node ./run-cluster.js ws
+
+  benchmark:
+    build: .
+
+volumes:
+  redis:
